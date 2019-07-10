@@ -1,0 +1,23 @@
+{
+  "name": "performance",
+  "version": "1.0.0",
+  "description": "Hertz Performance Test",
+  "main": "server.js",
+  "engines": {
+    "node": ">=10.15.3",
+    "npm": ">=6.9.0"
+  },
+  "scripts": {
+    "start": "node server.js"
+  },
+  "author": "IBM",
+  "dependencies": {
+    "@cloudant/cloudant": "4.0.0",
+    "bluebird": "3.5.1",
+    "body-parser": "1.18.2",
+    "express": "4.16.2",
+    "prom-client": "11.3.0",
+    "request-promise": "4.2.2"
+  },
+  "devDependencies": {}
+}
