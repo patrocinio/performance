@@ -47,12 +47,29 @@ app.get("/hre/api/readiness", function(req, res, next) {
   next();
 });
 
+// Take up some memory
+let myItems = {};
+
+const takeUpCpuAndMemory = () => {
+  const startTime = Date.now();
+  myItems = {};
+  for (let x = 0; x < 180000; x++) {
+    myItems["" + x] = generateID();
+  }
+  const totalTime = Date.now() - startTime;
+  console.log("Took up " + totalTime + " ms of CPU");
+};
+
 const handleRateRequest = async (req, res, next) => {
   const startTime = Date.now();
   await handleCarAvailability(req, res, next);
+  takeUpCpuAndMemory();
   await handleRateRequests(req, res, next);
+  takeUpCpuAndMemory();
   await handleIncrementalInformation(req, res, next);
+  takeUpCpuAndMemory();
   await handleIncrementalTwo(req, res, next);
+  takeUpCpuAndMemory();
   await handlePostQuote(req, res, next);
   const totalTime = Date.now() - startTime;
   console.log("Done with all six calls. Time: " + totalTime + " ms");
