@@ -242,7 +242,7 @@ const handleRatesAvailability = async rateAvailKeys => {
         }, {});
       })
       .catch(error => {
-        logger.error(
+        console.log(
           "rate availability view call by car type failure\n",
           error
         );
@@ -308,10 +308,10 @@ const handleIncrementalInformation = async (req, res, next) => {
   } catch (error) {
     if (error.error == "not_found") {
       let msg = "no incremental rates found";
-      logger.error(msg);
+      console.log(msg);
     } else {
       let msg = "error retrieving incremental rates";
-      logger.error(msg);
+      console.log(msg);
     }
   }
   return null;
@@ -344,7 +344,7 @@ const handleRateRequests = async (req, res, next) => {
           return result;
         })
         .catch(err => {
-          logger.error(
+          console.log(
             "Error retrieving rates - exception thrown: " + JSON.stringify(err)
           );
         });
