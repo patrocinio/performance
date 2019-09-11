@@ -1,8 +1,10 @@
 let cloudantURL = process.env.CLOUDANT_URL;
 if (!cloudantURL) {
   // Default to the QA (System test) environment
-  cloudantURL =
-    "https://0b93a06e-16ad-460a-908f-9dab92b2775c-bluemix:0fc396f71cf810bca109820704f578ffddbd6838524d03a75e3355df83e25cbd@0b93a06e-16ad-460a-908f-9dab92b2775c-bluemix.cloudant.com";
+  console.log(
+    "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/"
+  );
+  return;
 }
 console.log("Cloudant URL: " + cloudantURL);
 
@@ -11,6 +13,63 @@ const Cloudant = require("@cloudant/cloudant");
 const colonIdx = cloudantURL.indexOf(":");
 const protocolType = cloudantURL.substring(0, colonIdx);
 const protocol = require(protocolType);
+
+const chunkSize = 100;
+const RA_KEYS = [
+  "ATL:ZR:2019-11-07:RCUD1:D:CCAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:ACAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:CCAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:ACAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:CDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:CDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:ECAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:ECAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:EDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:EDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:FCAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:FCAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:FDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:FDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:FFAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:FFAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:ICAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:ICAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:IDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:IDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:IFAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:IFAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:IPAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:IPAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:IVAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:IVAR",
+  "ATL:ZR:2019-11-07:ROWD1:D:JFAR",
+  "ATL:ZR:2019-11-07:ROWD1:D:ACAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:LCAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:LCAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:LDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:LDAR",
+  "ATL:ZR:2019-11-07:ROWD1:D:LSAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:MVAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:MVAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:PCAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:PCAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:PDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:PDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:PFAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:PFAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:SCAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:SCAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:SDAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:SDAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:SFAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:SFAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:SPAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:SPAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:STAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:STAR",
+  "ATL:ZR:2019-11-07:RCUD1:D:XXAR",
+  "ATL:ZR:2019-11-07:RXHD1:D:XXAR"
+];
 
 let customAgent = new protocol.Agent({
   keepAlive: true,
@@ -62,17 +121,21 @@ const takeUpCpuAndMemory = () => {
 
 const handleRateRequest = async (req, res, next) => {
   const startTime = Date.now();
-  await handleCarAvailability(req, res, next);
-  takeUpCpuAndMemory();
-  await handleRateRequests(req, res, next);
-  takeUpCpuAndMemory();
-  await handleIncrementalInformation(req, res, next);
-  takeUpCpuAndMemory();
-  await handleIncrementalTwo(req, res, next);
-  takeUpCpuAndMemory();
-  await handlePostQuote(req, res, next);
+  await handleRatesAvailability(RA_KEYS);
+
+  // await handleCarAvailability(req, res, next);
+  // takeUpCpuAndMemory();
+  // await handleRateRequests(req, res, next);
+  // takeUpCpuAndMemory();
+  // await handleIncrementalInformation(req, res, next);
+  // takeUpCpuAndMemory();
+  // await handleIncrementalTwo(req, res, next);
+  // takeUpCpuAndMemory();
+  // await handlePostQuote(req, res, next);
   const totalTime = Date.now() - startTime;
-  console.log("Done with all six calls. Time: " + totalTime + " ms");
+  console.log(
+    "Done with all rate availability calls. Time: " + totalTime + " ms"
+  );
   res.status(200).json({ a: "b" });
   return;
 };
@@ -91,6 +154,50 @@ const handlePostQuote = async (req, res, next) => {
   } catch (ee) {
     console.log("Quote error");
   }
+};
+
+const handleRatesAvailability = async rateAvailKeys => {
+  let ratesAvailDB = cloudant.db.use("rates_availability");
+  let promises = [];
+  for (let i = 0; i < rateAvailKeys.length; i += chunkSize) {
+    //    console.log(rateAvailKeys.slice(i, Math.min(i + chunkSize, rateAvailKeys.length)));
+    const promise = ratesAvailDB
+      .list({
+        keys: rateAvailKeys.slice(
+          i,
+          Math.min(i + chunkSize, rateAvailKeys.length)
+        ),
+        include_docs: true,
+        sorted: false
+      })
+      .then(result => {
+        return result.rows.reduce((map, row) => {
+          return row.doc
+            ? Object.assign(map, {
+                [row.id]: row.doc
+              })
+            : map;
+        }, {});
+      })
+      .catch(error => {
+        logger.error(
+          "rate availability view call by car type failure\n",
+          error
+        );
+      });
+
+    promises.push(promise);
+  }
+  let availabilityData = await Promise.all(promises);
+  let validRateAvailabilities = {};
+  for (let i = 0; i < availabilityData.length; i++) {
+    let availabilities = availabilityData[i];
+    validRateAvailabilities = Object.assign(
+      validRateAvailabilities,
+      availabilities
+    );
+  }
+  return validRateAvailabilities;
 };
 
 const handleCarAvailability = async (req, res, next) => {
