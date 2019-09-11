@@ -3,7 +3,7 @@ if (!cloudantURL) {
   cloudantURL = "<put cloudant url here>";
   // Default to the QA (System test) environment
   console.log(
-    "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/" or edit server.js
+    "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/ or edit server.js"
   );
   return;
 }
@@ -242,10 +242,7 @@ const handleRatesAvailability = async rateAvailKeys => {
         }, {});
       })
       .catch(error => {
-        console.log(
-          "rate availability view call by car type failure\n",
-          error
-        );
+        console.log("rate availability view call by car type failure\n", error);
       });
 
     promises.push(promise);
