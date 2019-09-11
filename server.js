@@ -1,8 +1,9 @@
 let cloudantURL = process.env.CLOUDANT_URL;
 if (!cloudantURL) {
+  cloudantURL = "<put cloudant url here>";
   // Default to the QA (System test) environment
   console.log(
-    "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/"
+    "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/" or edit server.js
   );
   return;
 }
@@ -120,23 +121,84 @@ const takeUpCpuAndMemory = () => {
 };
 
 const handleRateRequest = async (req, res, next) => {
+  let responseDoc = {};
+  const webRequest = req.body;
+  const itemsToRun = webRequest.itemsToRun;
+  if (!itemsToRun) {
+    res
+      .status(500)
+      .json({ err: "Please specify an itemsToRun array in the body" });
+  }
   const startTime = Date.now();
-  await handleRatesAvailability(RA_KEYS);
+  let midTime = startTime;
 
-  // await handleCarAvailability(req, res, next);
+  if (itemsToRun.includes("RATE_REQUEST")) {
+    await handleRateRequests(req, res, next);
+    const interimTotal = Date.now() - midTime;
+    midTime = Date.now();
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["RATE_REQUEST"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      takeUpCpuAndMemory();
+    }
+  }
+
+  if (itemsToRun.includes("RATES_AVAILABILITY")) {
+    await handleRatesAvailability(RA_KEYS);
+    const interimTotal = Date.now() - midTime;
+    midTime = Date.now();
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["RATES_AVAILABILITY"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      takeUpCpuAndMemory();
+    }
+  }
+
+  if (itemsToRun.includes("CAR_AVAILABILITY")) {
+    await handleCarAvailability();
+    const interimTotal = Date.now() - midTime;
+    midTime = Date.now();
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["CAR_AVAILABILITY"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      takeUpCpuAndMemory();
+    }
+  }
+
   // takeUpCpuAndMemory();
-  // await handleRateRequests(req, res, next);
-  // takeUpCpuAndMemory();
-  // await handleIncrementalInformation(req, res, next);
-  // takeUpCpuAndMemory();
-  // await handleIncrementalTwo(req, res, next);
-  // takeUpCpuAndMemory();
-  // await handlePostQuote(req, res, next);
+  if (itemsToRun.includes("INCREMENTAL_INFORMATION")) {
+    await handleIncrementalInformation(req, res, next);
+    const interimTotal = Date.now() - midTime;
+    midTime = Date.now();
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["INCREMENTAL_INFORMATION"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      takeUpCpuAndMemory();
+    }
+  }
+
+  if (itemsToRun.includes("POST_QUOTE")) {
+    await handleIncrementalInformation(req, res, next);
+    const interimTotal = Date.now() - midTime;
+    midTime = Date.now();
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["POST_QUOTE"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      takeUpCpuAndMemory();
+    }
+  }
+
+  responseDoc["USE_CPU_AND_MEMORY"] = itemsToRun.includes("USE_CPU_AND_MEMORY");
+
   const totalTime = Date.now() - startTime;
-  console.log(
-    "Done with all rate availability calls. Time: " + totalTime + " ms"
-  );
-  res.status(200).json({ a: "b" });
+  console.log(totalTime);
+  responseDoc["TOTAL"] = totalTime + "ms";
+  res.status(200).json(responseDoc);
   return;
 };
 
@@ -200,105 +262,98 @@ const handleRatesAvailability = async rateAvailKeys => {
   return validRateAvailabilities;
 };
 
-const handleCarAvailability = async (req, res, next) => {
+const handleCarAvailability = async () => {
   let curDb = cloudant.db.use("car_availability");
 
   try {
     let carAvailRows = await curDb.list({
-      keys: ["CA:LAX:ZR:LAX", "CA:LAX:ZR:*"],
+      keys: ["CA:ATL:ZE:ATL", "CA:ATL:ZE:*"],
       stale: "ok",
       sorted: false,
       include_docs: true
     });
-    console.log("Car availability done");
   } catch (err) {
-    console.log("Car availability error");
+    console.log("Car availability error: " + JSON.stringify(err));
   }
 };
 
 const handleIncrementalInformation = async (req, res, next) => {
-  let curDb = cloudant.db.use("incremental_information");
+  let incrementalInformationDb = cloudant.db.use("incremental_information");
 
   try {
-    const dbResultSet = await curDb.view(
+    const incrementalKey = "ATL:ZE";
+    const dbResultSet = await incrementalInformationDb.view(
       "incrementalInformationDesignDocument",
-      "incrementalInformation",
+      "incrementalInformationAndTaxableRates",
       {
-        key: "LAX:ZR",
+        key: incrementalKey,
         stale: "ok",
         include_docs: true,
         sorted: false
       }
     );
-    console.log("Incremental Information - view - done");
-  } catch (err) {
-    console.log("Incremental Information - view - error");
-  }
-};
 
-const handleIncrementalTwo = async (req, res, next) => {
-  let curDb = cloudant.db.use("incremental_information");
-
-  try {
-    let iiRows = await curDb.list({
-      keys: [
-        "TXR:LAX:ZR:VLF",
-        "TXR:LAX:ZR:APCONRGFEE",
-        "TXR:LAX:ZR:CFC1",
-        "TXR:LAX:ZR:TOURSM SRG",
-        "TXR:LAX:ZR:STATE TAX"
-      ],
-      sorted: false,
-      include_docs: true
+    const txrDocuments = [];
+    const filteredForICI = dbResultSet.rows.filter(ele => {
+      if (ele.doc.Type === "TXR") {
+        txrDocuments.push(ele.doc);
+        return false;
+      } else if (ele.doc.Type === "ICI") {
+        return true;
+      }
     });
-    console.log("Incremental Information - list - done");
-  } catch (err) {
-    console.log("Incremental Information - list - error");
+    //cfm.setField('txrDocuments', txrDocuments);
+
+    return filteredForICI.map(doc => doc.doc);
+  } catch (error) {
+    if (error.error == "not_found") {
+      let msg = "no incremental rates found";
+      logger.error(msg);
+    } else {
+      let msg = "error retrieving incremental rates";
+      logger.error(msg);
+    }
   }
+  return null;
 };
 
 const handleRateRequests = async (req, res, next) => {
-  let curDb = cloudant.db.use("rates_x7");
+  let keyMap = { "ATL~ATL~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"] };
+
+  let curRatesDb = cloudant.db.use("rates_2020_12");
+
   let allCalls = [];
 
-  let curCall = curDb
-    .view("shopRatesDesignDoc", "shopRatesByGdsAndPlanCode", {
-      key: "LAX:LAX:ZR:2019-10-05:S:E",
-      include_docs: false,
-      sorted: false,
-      stale: "ok"
-    })
-    .then(result => {
-      return result;
-    })
-    .catch(err => {
-      logger.error("Error retrieving rates - exception thrown");
-    });
-
-  allCalls.push(curCall);
-
-  curCall = curDb
-    .view("shopRatesDesignDoc", "shopRatesByGdsAndPlanCode", {
-      key: "LAX:LAX:ZR:2019-10-05:S:D",
-      include_docs: false,
-      sorted: false,
-      stale: "ok"
-    })
-    .then(result => {
-      return result;
-    })
-    .catch(err => {
-      logger.error("Error retrieving rates - exception thrown");
-    });
-
-  allCalls.push(curCall);
-
-  try {
-    const resp = await Promise.all(allCalls);
-    console.log("Rates done");
-  } catch (err) {
-    console.log("Rates error");
+  for (let [partitionKey, documentKeys] of Object.entries(keyMap)) {
+    for (let i = 0; i < documentKeys.length; i += chunkSize) {
+      const chunkKeys = documentKeys.slice(
+        i,
+        Math.min(i + chunkSize, documentKeys.length)
+      );
+      let curCall = curRatesDb
+        .partitionedView(
+          encodeURIComponent(partitionKey),
+          "shopRatesDesignDoc",
+          "shopRatesByGdsAndPlanCode",
+          {
+            keys: chunkKeys,
+            include_docs: false
+          }
+        )
+        .then(result => {
+          return result;
+        })
+        .catch(err => {
+          logger.error(
+            "Error retrieving rates - exception thrown: " + JSON.stringify(err)
+          );
+        });
+      allCalls.push(curCall);
+    }
   }
+  const resp = await Promise.all(allCalls);
+
+  return resp;
 };
 
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
