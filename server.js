@@ -165,17 +165,32 @@ const handleRateRequest = async (req, res, next) => {
   const startTime = Date.now();
   let midTime = startTime;
 
-  if (itemsToRun.includes("RATE_REQUEST")) {
-    await handleRateRequests(req, res, next);
+  if (itemsToRun.includes("RATE_REQUEST_ORLN")) {
+    await handleOrlnRateRequest();
     const interimTotal = Date.now() - midTime;
     if (itemsToRun.includes("LOG_EVERYTHING")) {
-      responseDoc["RATE_REQUEST"] = interimTotal + "ms";
+      responseDoc["RATE_REQUEST_ORLN"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
       midTime = Date.now();
       takeUpCpuAndMemory();
       const cmTotal = Date.now() - midTime;
-      responseDoc["RATE_REQUEST_GAP"] = cmTotal + "ms";
+      responseDoc["RATE_REQUEST_ORLN_GAP"] = cmTotal + "ms";
+    }
+    midTime = Date.now();
+  }
+
+  if (itemsToRun.includes("RATE_REQUEST_ATL")) {
+    await handleAtlRateRequest();
+    const interimTotal = Date.now() - midTime;
+    if (itemsToRun.includes("LOG_EVERYTHING")) {
+      responseDoc["RATE_REQUEST_ATL"] = interimTotal + "ms";
+    }
+    if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
+      takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["RATE_REQUEST_ATL_GAP"] = cmTotal + "ms";
     }
     midTime = Date.now();
   }
@@ -362,9 +377,31 @@ const handleIncrementalInformation = async (req, res, next) => {
   return null;
 };
 
-const handleRateRequests = async (req, res, next) => {
-  let keyMap = { "ATL~ATL~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"] };
+const handleAtlRateRequest = async () => {
+  let keyMap = {
+    "ATL~ATL~ZE~2019-11-02": [
+      "S~D",
+      "S~H",
+      "S~B",
+      "S~S",
+      "S~W",
+      "S~A",
+      "S~E",
+      "S~Q"
+    ]
+  };
+  return handleRateRequests(keyMap);
+};
 
+const handleOrlnRateRequest = async () => {
+  let keyMap = {
+    "ORLN18~ORLN18~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"]
+  };
+  return handleRateRequests(keyMap);
+};
+
+const handleRateRequests = async keyMap => {
+  //  let keyMap = { "ATL~ATL~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"] };
   let curRatesDb = cloudant.db.use("rates_2020_12");
 
   let allCalls = [];
