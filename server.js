@@ -1,6 +1,7 @@
 let cloudantURL = process.env.CLOUDANT_URL;
+
 if (!cloudantURL) {
-  cloudantURL = "<put cloudant url here>";
+  cloudantURL = "";
   // Default to the QA (System test) environment
   console.log(
     "No Cloudant URL defined: please use: export CLOUDANT_URL=http://myserver/ or edit server.js"
@@ -14,6 +15,24 @@ const Cloudant = require("@cloudant/cloudant");
 const colonIdx = cloudantURL.indexOf(":");
 const protocolType = cloudantURL.substring(0, colonIdx);
 const protocol = require(protocolType);
+
+let customAgent = new protocol.Agent({
+  keepAlive: true,
+  keepAliveMsecs: 30000,
+  maxSockets: 50
+});
+
+let cloudantOpts = {
+  url: cloudantURL,
+  plugin: "promises",
+  requestDefaults: {
+    agent: customAgent
+  }
+};
+
+const quoteStuff = require("./postdata"); // Large post body sent as part of quote
+
+const cloudant = Cloudant(cloudantOpts);
 
 const chunkSize = 100;
 const RA_KEYS = [
@@ -72,33 +91,47 @@ const RA_KEYS = [
   "ATL:ZR:2019-11-07:RXHD1:D:XXAR"
 ];
 
-let customAgent = new protocol.Agent({
-  keepAlive: true,
-  keepAliveMsecs: 30000,
-  maxSockets: 50
-});
-
-let cloudantOpts = {
-  url: cloudantURL,
-  plugin: "promises",
-  requestDefaults: {
-    agent: customAgent
-  }
-};
-
-const quoteStuff = require("./postdata"); // Large post body sent as part of quote
-
-const cloudant = Cloudant(cloudantOpts);
-
 const express = require("express");
 
 const bodyParser = require("body-parser");
 const app = express();
 const jsonParser = bodyParser.json();
 
+let ramEater = {};
+
+function rando(len) {
+  const vals = "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let resp = "";
+  for (let x = 0; x < len; x++) {
+    resp = resp + vals.charAt(Math.floor(Math.random() * vals.length));
+  }
+  return resp;
+}
+
 // Kube readiness stuff....
-app.get("/hre/api/health", function(req, res, next) {
-  res.status(200).send("success");
+app.get("/hre/api/eatRAM", function(req, res, next) {
+  const ramAmount = req.query.amount;
+  if (!ramAmount) {
+    res.status(500).send("Please specify an amount (in MB) of RAM to use");
+  } else if (ramAmount == -1) {
+    // Clear the ram eater
+    ramEater = {};
+    res.status(200).send("success clearing the RAM eater");
+  } else {
+    for (let x = 0; x < ramAmount; x++) {
+      for (let y = 0; y < 1024; y++) {
+        randoKey = rando(24);
+        randoVal = rando(1000);
+        ramEater[randoKey] = randoVal;
+      }
+    }
+    res
+      .status(200)
+      .send(
+        "success populating the RAM eater. Total keys: " +
+          Object.keys(ramEater).length
+      );
+  }
   next();
 });
 
@@ -135,62 +168,77 @@ const handleRateRequest = async (req, res, next) => {
   if (itemsToRun.includes("RATE_REQUEST")) {
     await handleRateRequests(req, res, next);
     const interimTotal = Date.now() - midTime;
-    midTime = Date.now();
     if (itemsToRun.includes("LOG_EVERYTHING")) {
       responseDoc["RATE_REQUEST"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
       takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["RATE_REQUEST_GAP"] = cmTotal + "ms";
     }
+    midTime = Date.now();
   }
 
   if (itemsToRun.includes("RATES_AVAILABILITY")) {
     await handleRatesAvailability(RA_KEYS);
     const interimTotal = Date.now() - midTime;
-    midTime = Date.now();
     if (itemsToRun.includes("LOG_EVERYTHING")) {
       responseDoc["RATES_AVAILABILITY"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
       takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["RATES_AVAILABILITY_GAP"] = cmTotal + "ms";
     }
+    midTime = Date.now();
   }
 
   if (itemsToRun.includes("CAR_AVAILABILITY")) {
     await handleCarAvailability();
     const interimTotal = Date.now() - midTime;
-    midTime = Date.now();
     if (itemsToRun.includes("LOG_EVERYTHING")) {
       responseDoc["CAR_AVAILABILITY"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
       takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["CAR_AVAILABILITY_GAP"] = cmTotal + "ms";
     }
+    midTime = Date.now();
   }
 
   // takeUpCpuAndMemory();
   if (itemsToRun.includes("INCREMENTAL_INFORMATION")) {
     await handleIncrementalInformation(req, res, next);
     const interimTotal = Date.now() - midTime;
-    midTime = Date.now();
     if (itemsToRun.includes("LOG_EVERYTHING")) {
       responseDoc["INCREMENTAL_INFORMATION"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
       takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["INCREMENTAL_INFORMATION_GAP"] = cmTotal + "ms";
     }
+    midTime = Date.now();
   }
 
   if (itemsToRun.includes("POST_QUOTE")) {
     await handleIncrementalInformation(req, res, next);
     const interimTotal = Date.now() - midTime;
-    midTime = Date.now();
     if (itemsToRun.includes("LOG_EVERYTHING")) {
       responseDoc["POST_QUOTE"] = interimTotal + "ms";
     }
     if (itemsToRun.includes("USE_CPU_AND_MEMORY")) {
+      midTime = Date.now();
       takeUpCpuAndMemory();
+      const cmTotal = Date.now() - midTime;
+      responseDoc["POST_QUOTE_GAP"] = cmTotal + "ms";
     }
+    midTime = Date.now();
   }
 
   responseDoc["USE_CPU_AND_MEMORY"] = itemsToRun.includes("USE_CPU_AND_MEMORY");
