@@ -1,4 +1,5 @@
 let cloudantURL = process.env.CLOUDANT_URL;
+let portNumber = process.env.PORT_NUMBER;
 
 if (!cloudantURL) {
   cloudantURL = "";
@@ -440,8 +441,10 @@ const handleRateRequests = async keyMap => {
 
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
 
-app.listen(9080, function() {
-  console.log("HRE listening on port " + 9080);
+console.log ("Port: " + portNumber)
+
+app.listen(portNumber, function() {
+  console.log("HRE listening on port " + portNumber);
 });
 
 module.exports = {
