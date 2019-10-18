@@ -1,5 +1,3 @@
-export CLOUDANT_URL=
-
 for p in {30000..30009}
 do
   echo Starting miniapp at $p
