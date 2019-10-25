@@ -439,7 +439,20 @@ const handleRateRequests = async keyMap => {
   return resp;
 };
 
+const http = require("request");
+
+const handleWelcomeRequest = async (req, res, next) => {
+  http.get({
+    hostname: 'https://rates-perf-006.cloudant.com',
+    agent: false  // Create a new agent just for this one request
+  }, function(res) {
+  });
+  res.status(200).send("success");
+  return;
+}
+
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
+app.get("/mini/api/welcome", handleWelcomeRequest);
 
 console.log ("Port: " + portNumber)
 

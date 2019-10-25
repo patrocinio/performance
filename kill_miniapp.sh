@@ -1,4 +1,4 @@
-PID=$(ps | grep "node server.js" | grep -v grep | awk '{ print $2 }')
+PID=$(ps -ef | grep "node server.js" | grep -v grep | awk '{ print $2 }')
 
 for p in $PID
 do
