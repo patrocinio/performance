@@ -442,6 +442,7 @@ const handleRateRequests = async keyMap => {
 const http = require("request");
 
 const handleWelcomeRequest = async (req, res, next) => {
+  console.log ("Sending welcome request...");
   http.get({
     hostname: 'https://rates-perf-006.cloudant.com',
     agent: false  // Create a new agent just for this one request
