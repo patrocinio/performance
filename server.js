@@ -158,6 +158,8 @@ const handleRateRequest = async (req, res, next) => {
   let responseDoc = {};
   const webRequest = req.body;
   const itemsToRun = webRequest.itemsToRun;
+
+  console.log ("Items to run: " + JSON.stringify(itemsToRun));
   if (!itemsToRun) {
     res
       .status(500)
