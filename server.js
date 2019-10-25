@@ -10,10 +10,10 @@ const handleWelcomeRequest = async (req, res, next) => {
   console.log (Date.now() + " Sending welcome request...");
   http (URL, (err, response, body) => {
     if (err) {
-      console.log (err);
+      console.log (Date.now() + err);
       res.status(500).send(err);
     }
-    console.log(body);
+    console.log(Date.now() + body);
     res.status(200).send(body);
     return;
   })
