@@ -453,7 +453,28 @@ const handleWelcomeRequest = async (req, res, next) => {
   return;
 }
 
+const handleSingleRateRequest = async (req, res, next) => {
+  let responseDoc = {};
+  const webRequest = req.body;
+  const keyMap = webRequest.keyMap;
+  if (!keyMap) {
+    res
+      .status(500)
+      .json({ err: "Please specify a keyMap in the body" });
+  }
+  const startTime = Date.now();
+  handleRateRequests(keyMap);
+  const totalTime = Date.now() - startTime;
+  console.log(totalTime);
+  responseDoc["TOTAL"] = totalTime + "ms";
+  res.status(200).json(responseDoc);
+  return;
+};
+
+
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
+app.post("/hre/api/single-rate", jsonParser, handleSingleRateRequest);
+
 app.get("/mini/api/welcome", handleWelcomeRequest);
 
 console.log ("Port: " + portNumber)
