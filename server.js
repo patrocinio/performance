@@ -284,6 +284,61 @@ const handlePostQuote = async (req, res, next) => {
   }
 };
 
+const handleDynamicRateAvailability = async(keyMap) => {
+  const rateCodes = ['AP1L', 'ADPL', 'VRCNW', 'APNL9', 'AUAWU', 'AJPFW9', 'AUAWNL', 'AKLIW9', 'APFID', 'AKND', 'AUADAU', 'AKLIWS', 'AKLDD', 'ADFD', 'ALCD', 'AUAWN9', 'AUAWBE', 'VRCNAW', 'AUA9AU', 'AUADSW', 'ADPMXW', 'AJPFW', 'VW7AUS', 'AUAWE', 'AKLED', 'AUAWG', 'AMMD', 'ALNES', 'AKLDWS', 'AUADU', 'VRCNAD', 'APDLS', 'APWLSS', 'AUADBE', 'AUADSZ', 'ADFW9', 'AAPCD', 'ALCEW', 'APFIW', 'ADFW', 'ALNE', 'AUAWG9', 'AUADF', 'AUASAU', 'AKLDW', 'AKLEWS', 'APWLS', 'AUAWF', 'AWPL9', 'ADPMXD', 'AUAWGS', 'AUASW9', 'APFIW9', 'AUASZS', 'AJI7S', 'AUAWF9', 'AJI7', 'AKNW9', 'ADFMXW', 'ADFBXW', 'ALNE9', 'VRCND', 'ALAD', 'ADFWS', 'APFIWS', 'AUASWS', 'AUAWES', 'ALDE', 'AUADE', 'ALCW', 'AUAWAU', 'AUASZ9', 'AJPFWS', 'AUAWE9', 'AKLID', 'AKLIW', 'ADPBXD', 'AUAWSW', 'APWLS9', 'AAPCW', 'AKLEW9', 'ACMED', 'AUAWFS', 'ACMP', 'APNL', 'AUAWU9', 'AWPL', 'AKLEW', 'ALAW', 'AUAWSZ', 'APNLS', 'AUAWNS', 'AJI79', 'VRCNCD', 'VRCNCW', 'ADFMXD', 'AJID', 'AKLDW9', 'ADFBXD', 'AJCLW', 'AJCLD', 'AUAWUS', 'AUADG', 'AUADNL', 'ADPBXW', 'AWPLS', 'AJPFD', 'AKNW', 'AKNWS', 'ALCED'];
+  const planCodes = ['D', 'W', 'M', 'E'];
+
+  // ["LAS","LAS","ZE","2019_11_06"]
+  keyMapList = Object.keys(keyMap)[0].split('~')
+
+  // "LAX:ZE:2019-11-07:<rate_code>:D:CCAR"
+  let rateAvailKeys = []
+  for (let i = 0; i < rateCodes.length; i += 1) {
+    for (let j = 0; j < planCodes.length; j += 1) {
+      rateAvailKeys.push(keyMapList[0] + ":" + keyMapList[2] + ":" + keyMapList[3] + ":" + rateCodes[i] + ":" + planCodes[j] + ":" + "ACAR")
+    }
+  }
+
+  let ratesAvailDB = cloudant.db.use("rates_availability");
+  let promises = [];
+  for (let i = 0; i < rateAvailKeys.length; i += chunkSize) {
+    //    console.log(rateAvailKeys.slice(i, Math.min(i + chunkSize, rateAvailKeys.length)));
+    const promise = ratesAvailDB
+      .list({
+        keys: rateAvailKeys.slice(
+          i,
+          Math.min(i + chunkSize, rateAvailKeys.length)
+        ),
+        include_docs: true,
+        sorted: false
+      })
+      .then(result => {
+        return result.rows.reduce((map, row) => {
+          return row.doc
+            ? Object.assign(map, {
+                [row.id]: row.doc
+              })
+            : map;
+        }, {});
+      })
+      .catch(error => {
+        console.log("rate availability view call by car type failure\n", error);
+      });
+
+    promises.push(promise);
+  }
+  let availabilityData = await Promise.all(promises);
+  let validRateAvailabilities = {};
+  for (let i = 0; i < availabilityData.length; i++) {
+    let availabilities = availabilityData[i];
+    validRateAvailabilities = Object.assign(
+      validRateAvailabilities,
+      availabilities
+    );
+  }
+  return validRateAvailabilities;
+}
+
 const handleRatesAvailability = async rateAvailKeys => {
   let ratesAvailDB = cloudant.db.use("rates_availability");
   let promises = [];
@@ -475,6 +530,7 @@ const handleSingleRateRequest = async (req, res, next) => {
 
   const startTime = Date.now();
   handleRateRequests(db, keyMap);
+  handleDynamicRateAvailability(keyMap);
   const totalTime = Date.now() - startTime;
   console.log(totalTime);
   responseDoc["TOTAL"] = totalTime + "ms";
