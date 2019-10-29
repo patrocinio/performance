@@ -403,7 +403,7 @@ const handleOrlnRateRequest = async () => {
   return handleRateRequests(keyMap);
 };
 
-const handleRateRequests = async db, keyMap => {
+const handleRateRequests = async (db, keyMap) => {
   //  let keyMap = { "ATL~ATL~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"] };
   let curRatesDb = cloudant.db.use(db);
 
