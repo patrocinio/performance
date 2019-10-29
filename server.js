@@ -403,9 +403,9 @@ const handleOrlnRateRequest = async () => {
   return handleRateRequests(keyMap);
 };
 
-const handleRateRequests = async keyMap => {
+const handleRateRequests = async db, keyMap => {
   //  let keyMap = { "ATL~ATL~ZE~2019-11-07": ["S~D", "S~H", "S~B", "S~A", "S~E"] };
-  let curRatesDb = cloudant.db.use("rates_2020_12");
+  let curRatesDb = cloudant.db.use(db);
 
   let allCalls = [];
 
@@ -458,14 +458,23 @@ const handleWelcomeRequest = async (req, res, next) => {
 const handleSingleRateRequest = async (req, res, next) => {
   let responseDoc = {};
   const webRequest = req.body;
+
+//  console.log ("Web Request: " + webRequest);
+
   const keyMap = webRequest.keyMap;
   if (!keyMap) {
     res
       .status(500)
       .json({ err: "Please specify a keyMap in the body" });
   }
+
+  const db = webRequest.db;
+
+  console.log ("keyMap: " + keyMap)
+  console.log ("db: " + db)
+
   const startTime = Date.now();
-  handleRateRequests(keyMap);
+  handleRateRequests(db, keyMap);
   const totalTime = Date.now() - startTime;
   console.log(totalTime);
   responseDoc["TOTAL"] = totalTime + "ms";
