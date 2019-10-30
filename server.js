@@ -565,8 +565,8 @@ const handleSingleRateRequest = async (req, res, next) => {
 
   const db = webRequest.db;
 
-  console.log ("keyMap: " + JSON.stringify(keyMap))
-  console.log ("db: " + db)
+  //console.log ("keyMap: " + JSON.stringify(keyMap))
+  //console.log ("db: " + db)
 
   const startTime = Date.now();
   handleRateRequests(db, keyMap);
