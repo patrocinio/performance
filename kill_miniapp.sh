@@ -1,4 +1,4 @@
-PID=$(ps -ef | grep "node server.js" | grep icpdepl | grep -v grep | awk '{ print $2 }')
+PID=$(ps -ef | grep "node --max-old-space-size=4096 server.js" | grep icpdepl | grep -v grep | awk '{ print $2 }')
 
 for p in $PID
 do
