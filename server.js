@@ -581,9 +581,37 @@ const handleSingleRateRequest = async (req, res, next) => {
   return;
 };
 
+const handleRateAvailabilityRequest = async (req, res, next) => {
+  let responseDoc = {};
+  const webRequest = req.body;
+
+//  console.log ("Web Request: " + webRequest);
+
+  const keyMap = webRequest.keyMap;
+  if (!keyMap) {
+    res
+      .status(500)
+      .json({ err: "Please specify a keyMap in the body" });
+  }
+
+  const startTime = Date.now();
+
+  await handleDynamicRateAvailability(keyMap);
+
+  const totalTime = Date.now() - startTime;
+  console.log("RateAvailability time: " + totalTime +  " ms");
+
+  responseDoc["TOTAL"] = totalTime + " ms";
+  res.status(200).json(responseDoc);
+  return;
+};
+
+
+
 
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
 app.post("/hre/api/single-rate", jsonParser, handleSingleRateRequest);
+app.post("/hre/api/rate-availability", jsonParser, handleRateAvailabilityRequest);
 
 app.get("/mini/api/welcome", handleWelcomeRequest);
 
