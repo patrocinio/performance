@@ -579,7 +579,7 @@ const handleSingleRateRequest = async (req, res, next) => {
   //console.log ("db: " + db)
 
   handleRateRequests(db, keyMap);
-  handleDynamicRateAvailability(keyMap);
+//  handleDynamicRateAvailability(keyMap);
   responseDoc["TOTAL"] = " TBD ms";
   res.status(200).json(responseDoc);
   return;
