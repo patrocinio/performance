@@ -312,6 +312,8 @@ const handleDynamicRateAvailability = async(keyMap) => {
   //  }
   //}
 
+  const startTime = Date.now();
+
   let ratesAvailDB = cloudant.db.use("rates_availability");
   let promises = [];
 
@@ -328,6 +330,9 @@ const handleDynamicRateAvailability = async(keyMap) => {
       })
       .then(result => {
         return result.rows.reduce((map, row) => {
+          const totalTime = Date.now() - startTime;
+          console.log("DynamicRateAvailability time: " + totalTime +  " ms");
+
           return row.doc
             ? Object.assign(map, {
                 [row.id]: row.doc
@@ -504,6 +509,8 @@ const handleRateRequests = async (db, keyMap) => {
 
   let allCalls = [];
 
+  const startTime = Date.now();
+
   for (let [partitionKey, documentKeys] of Object.entries(keyMap)) {
     for (let i = 0; i < documentKeys.length; i += chunkSize) {
       const chunkKeys = documentKeys.slice(
@@ -521,6 +528,9 @@ const handleRateRequests = async (db, keyMap) => {
           }
         )
         .then(result => {
+          const totalTime = Date.now() - startTime;
+          console.log("RateRequest time: " + totalTime +  " ms");
+
           return result;
         })
         .catch(err => {
@@ -568,12 +578,9 @@ const handleSingleRateRequest = async (req, res, next) => {
   //console.log ("keyMap: " + JSON.stringify(keyMap))
   //console.log ("db: " + db)
 
-  const startTime = Date.now();
   handleRateRequests(db, keyMap);
   handleDynamicRateAvailability(keyMap);
-  const totalTime = Date.now() - startTime;
-  console.log(totalTime);
-  responseDoc["TOTAL"] = totalTime + "ms";
+  responseDoc["TOTAL"] = " TBD ms";
   res.status(200).json(responseDoc);
   return;
 };
