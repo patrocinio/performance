@@ -120,6 +120,10 @@ const jsonParser = bodyParser.json();
 
 let ramEater = {};
 
+// Prometheus stuff
+const prometheus = require('prom-client');
+const promRegister = prometheus.register;
+
 function rando(len) {
   const vals = "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   let resp = "";
@@ -617,6 +621,11 @@ app.post("/hre/api/single-rate", jsonParser, handleSingleRateRequest);
 app.post("/hre/api/rate-availability", jsonParser, handleRateAvailabilityRequest);
 
 app.get("/mini/api/welcome", handleWelcomeRequest);
+
+app.get('/metrics', (req, res, next) => {
+  res.set('Content-Type', promRegister.contentType);
+  res.end(promRegister.metrics());
+});
 
 console.log ("Port: " + portNumber)
 
