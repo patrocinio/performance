@@ -1,5 +1,5 @@
 let cloudantURL = process.env.CLOUDANT_URL;
-let portNumber = process.env.PORT_NUMBER;
+let portNumber = process.env.PORT_NUMBER || 9080;
 
 if (!cloudantURL) {
   cloudantURL = "";
@@ -23,7 +23,7 @@ let customAgent = new protocol.Agent({
   maxSockets: 50
 });
 
-const timerPlugin = require('./node_modules/@cloudant/cloudant/plugins/timer.js')
+const timerPlugin = require('./timer');
 
 let cloudantOpts = {
   url: cloudantURL,
@@ -119,6 +119,10 @@ const app = express();
 const jsonParser = bodyParser.json();
 
 let ramEater = {};
+
+// Prometheus stuff
+const prometheus = require('prom-client');
+const promRegister = prometheus.register;
 
 function rando(len) {
   const vals = "abcdefghijklmnopqrstuvwxyz1234567890ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -581,6 +585,7 @@ const handleSingleRateRequest = async (req, res, next) => {
   console.log("RateRequest time: " + totalTime +  " ms");
 
   responseDoc["TOTAL"] = totalTime + " ms";
+
   res.status(200).json(responseDoc);
   return;
 };
@@ -611,13 +616,16 @@ const handleRateAvailabilityRequest = async (req, res, next) => {
 };
 
 
-
-
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
 app.post("/hre/api/single-rate", jsonParser, handleSingleRateRequest);
 app.post("/hre/api/rate-availability", jsonParser, handleRateAvailabilityRequest);
 
 app.get("/mini/api/welcome", handleWelcomeRequest);
+
+app.get('/metrics', (req, res, next) => {
+  res.set('Content-Type', promRegister.contentType);
+  res.end(promRegister.metrics());
+});
 
 console.log ("Port: " + portNumber)
 

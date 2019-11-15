@@ -7,9 +7,6 @@
     "node": ">=10.15.3",
     "npm": ">=6.9.0"
   },
-  "scripts": {
-    "start": "node --max-old-space-size=4096 server.js"
-  },
   "author": "IBM",
   "dependencies": {
     "@cloudant/cloudant": "^4.2.1",
