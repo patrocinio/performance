@@ -1,9 +1,5 @@
-console.log ("Welcome to timer plugin");
-
 const BasePlugin = require('./node_modules/@cloudant/cloudant/plugins/base.js');
 const prometheus = require('prom-client');
-
-console.log ("Done with requires");
 
 /**
  * Timer plugin.

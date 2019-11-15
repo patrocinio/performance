@@ -23,12 +23,7 @@ let customAgent = new protocol.Agent({
   maxSockets: 50
 });
 
-
-console.log ("Loading plugin");
-
 const timerPlugin = require('./timer');
-
-console.log ("Plugin loaded");
 
 let cloudantOpts = {
   url: cloudantURL,
@@ -42,11 +37,7 @@ let cloudantOpts = {
 
 const quoteStuff = require("./postdata"); // Large post body sent as part of quote
 
-console.log ("Initializing Cloudant")
-
 const cloudant = Cloudant(cloudantOpts);
-
-console.log ("Cloudant loaded");
 
 const chunkSize = 100;
 const RA_KEYS = [
@@ -130,7 +121,6 @@ const jsonParser = bodyParser.json();
 let ramEater = {};
 
 // Prometheus stuff
-console.log ("Loading prometheus")
 const prometheus = require('prom-client');
 const promRegister = prometheus.register;
 
