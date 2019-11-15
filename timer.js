@@ -10,7 +10,8 @@ class TimerPlugin extends BasePlugin {
   // Instantiate Histogram
   responseHistogram = new prometheus.Histogram({
     name: 'response',
-    help: 'Cloudant response time'
+    help: 'Cloudant response time',
+    buckets: [0.1, 5, 15, 50, 100, 500]
   });
 
   constructor(client, cfg) {
