@@ -23,11 +23,15 @@ let customAgent = new protocol.Agent({
   maxSockets: 50
 });
 
+const timerPlugin = require('./node_modules/@cloudant/cloudant/plugins/timer.js')
+
 let cloudantOpts = {
   url: cloudantURL,
   plugin: "promises",
+  plugins: [timerPlugin],
   requestDefaults: {
-    agent: customAgent
+    agent: customAgent,
+    time: true
   }
 };
 
