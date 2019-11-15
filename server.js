@@ -23,7 +23,7 @@ let customAgent = new protocol.Agent({
   maxSockets: 50
 });
 
-const timerPlugin = require('./node_modules/@cloudant/cloudant/plugins/timer.js')
+const timerPlugin = require('./timer.js')
 
 let cloudantOpts = {
   url: cloudantURL,
@@ -581,6 +581,7 @@ const handleSingleRateRequest = async (req, res, next) => {
   console.log("RateRequest time: " + totalTime +  " ms");
 
   responseDoc["TOTAL"] = totalTime + " ms";
+
   res.status(200).json(responseDoc);
   return;
 };
@@ -609,8 +610,6 @@ const handleRateAvailabilityRequest = async (req, res, next) => {
   res.status(200).json(responseDoc);
   return;
 };
-
-
 
 
 app.post("/hre/api/rates", jsonParser, handleRateRequest);
