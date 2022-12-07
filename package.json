@@ -13,7 +13,7 @@
     "bluebird": "3.5.1",
     "body-parser": "1.18.2",
     "cloudant": "^1.10.0-NOTICE",
-    "express": "4.16.2",
+    "express": "4.17.3",
     "prom-client": "11.3.0",
     "request-promise": "4.2.2"
   },
